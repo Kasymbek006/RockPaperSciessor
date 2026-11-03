@@ -1,0 +1,754 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blockchain Rock Paper Scissors</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"></script>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #101323;
+    color: white;
+    min-height: 100vh;
+    padding: 30px 15px;
+}
+
+.container {
+    max-width: 850px;
+    margin: auto;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 35px;
+}
+
+header h1 {
+    font-size: 32px;
+    color: #8b9cff;
+    margin-bottom: 10px;
+}
+
+header p {
+    color: #aab0c5;
+}
+
+.wallet-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    background: #1b2036;
+    padding: 20px;
+    border-radius: 12px;
+    margin-bottom: 25px;
+}
+
+button {
+    border: none;
+    padding: 13px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold;
+    transition: 0.2s;
+}
+
+button:hover {
+    opacity: 0.85;
+    transform: translateY(-2px);
+}
+
+button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.primary {
+    background: #687cff;
+    color: white;
+}
+
+.secondary {
+    background: #303953;
+    color: white;
+}
+
+.status {
+    color: #aab0c5;
+    font-size: 14px;
+    margin-top: 8px;
+    word-break: break-all;
+}
+
+.card {
+    background: #1b2036;
+    border-radius: 12px;
+    padding: 25px;
+    margin-bottom: 20px;
+}
+
+.card h2 {
+    color: #a5b0ff;
+    margin-bottom: 20px;
+    font-size: 20px;
+}
+
+.players {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+.player {
+    background: #252c45;
+    padding: 18px;
+    border-radius: 10px;
+}
+
+.player h3 {
+    margin-bottom: 12px;
+}
+
+.player p {
+    color: #aab0c5;
+    font-size: 13px;
+    word-break: break-all;
+}
+
+.moves {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.move {
+    background: #252c45;
+    color: white;
+    border: 2px solid transparent;
+    padding: 22px 5px;
+    font-size: 17px;
+}
+
+.move.selected {
+    border-color: #8493ff;
+    background: #343e69;
+}
+
+.move span {
+    display: block;
+    font-size: 30px;
+    margin-bottom: 10px;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.result {
+    text-align: center;
+    padding: 25px;
+    background: #252c45;
+    border-radius: 10px;
+}
+
+.result h2 {
+    color: #8b9cff;
+    margin-bottom: 12px;
+}
+
+#gameResult {
+    font-size: 24px;
+    font-weight: bold;
+    margin-top: 10px;
+}
+
+.message {
+    color: #aab0c5;
+    margin-top: 15px;
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+footer {
+    text-align: center;
+    color: #727b98;
+    margin-top: 30px;
+    font-size: 13px;
+}
+
+@media(max-width: 550px) {
+    .players {
+        grid-template-columns: 1fr;
+    }
+
+    .moves {
+        gap: 6px;
+    }
+
+    .move {
+        font-size: 13px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+    <h1>✊ Rock Paper Scissors ✌️</h1>
+    <p>Fair Blockchain Multiplayer Game</p>
+</header>
+
+<div class="wallet-section">
+    <div>
+        <strong>Wallet Connection</strong>
+        <p class="status" id="walletStatus">Not connected</p>
+    </div>
+    <button class="primary" id="connectBtn">
+        Connect MetaMask
+    </button>
+</div>
+
+<div class="card">
+    <h2>Game Information</h2>
+
+    <div class="players">
+        <div class="player">
+            <h3>🔵 Player 1</h3>
+            <p id="player1">Not registered</p>
+            <p id="player1Status">Waiting...</p>
+        </div>
+
+        <div class="player">
+            <h3>🔴 Player 2</h3>
+            <p id="player2">Not registered</p>
+            <p id="player2Status">Waiting...</p>
+        </div>
+    </div>
+
+    <p class="status" id="roundInfo">Round: 1</p>
+    <p class="status" id="gameStatus">Waiting for players...</p>
+</div>
+
+<div class="card">
+    <h2>Choose Your Move</h2>
+
+    <div class="moves">
+        <button class="move" data-move="1">
+            <span>🪨</span>
+            Rock
+        </button>
+
+        <button class="move" data-move="2">
+            <span>📄</span>
+            Paper
+        </button>
+
+        <button class="move" data-move="3">
+            <span>✂️</span>
+            Scissors
+        </button>
+    </div>
+
+    <div class="actions">
+        <button class="primary" id="commitBtn" disabled>
+            Commit Move
+        </button>
+
+        <button class="secondary" id="revealBtn" disabled>
+            Reveal Move
+        </button>
+    </div>
+
+    <p class="message" id="message">
+        Connect your wallet to start playing.
+    </p>
+</div>
+
+<div class="card">
+    <div class="result">
+        <h2>🏆 Game Result</h2>
+        <p id="gameResult">Waiting for game...</p>
+
+        <div class="actions" style="justify-content:center">
+            <button class="primary" id="refreshBtn">
+                Refresh Game
+            </button>
+
+            <button class="secondary" id="newGameBtn">
+                New Game
+            </button>
+        </div>
+    </div>
+</div>
+
+<footer>
+    Powered by Ethereum Smart Contracts | Commit-Reveal Protocol
+</footer>
+
+</div>
+
+<script>
+
+// =====================================
+// 1. SMART CONTRACT CONFIGURATION
+// =====================================
+
+// Replace with your deployed contract address
+const CONTRACT_ADDRESS = "0x829396E818e40d0185d865c60319d69370C04693";
+
+// ABI: functions used by this frontend
+const ABI = [
+    "function player1() view returns (address)",
+    "function player2() view returns (address)",
+    "function round() view returns (uint256)",
+    "function result() view returns (string)",
+    "function players(uint256,address) view returns (bytes32,uint8,bool)",
+    "function commitMove(bytes32 hash)",
+    "function revealMove(uint8 move,string salt)",
+    "function newGame()",
+    "function makeHash(uint8 move,string salt) view returns (bytes32)"
+];
+
+// =====================================
+// 2. VARIABLES
+// =====================================
+
+let provider;
+let signer;
+let contract;
+let account;
+let selectedMove = null;
+
+const $ = id => document.getElementById(id);
+
+// =====================================
+// 3. CONNECT METAMASK
+// =====================================
+
+async function connectWallet() {
+
+    try {
+
+        if (!window.ethereum) {
+            throw new Error("MetaMask is not installed.");
+        }
+
+        provider = new ethers.BrowserProvider(window.ethereum);
+
+        await provider.send("eth_requestAccounts", []);
+
+        signer = await provider.getSigner();
+
+        account = await signer.getAddress();
+
+        contract = new ethers.Contract(
+            CONTRACT_ADDRESS,
+            ABI,
+            signer
+        );
+
+        $("walletStatus").innerText =
+            account.slice(0, 8) + "..." + account.slice(-6);
+
+        $("connectBtn").innerText = "Connected";
+
+        $("message").innerText = "Wallet connected successfully!";
+
+        await refreshGame();
+
+    } catch (error) {
+
+        showError(error);
+
+    }
+}
+
+// =====================================
+// 4. SELECT MOVE
+// =====================================
+
+document.querySelectorAll(".move").forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        selectedMove = Number(button.dataset.move);
+
+        document.querySelectorAll(".move").forEach(btn => {
+            btn.classList.remove("selected");
+        });
+
+        button.classList.add("selected");
+
+        $("message").innerText =
+            "Selected: " + moveName(selectedMove);
+
+        updateButtons();
+
+    });
+
+});
+
+function moveName(move) {
+
+    return {
+        1: "Rock",
+        2: "Paper",
+        3: "Scissors"
+    }[move];
+
+}
+
+// =====================================
+// 5. SAVE SECRET LOCALLY
+// =====================================
+
+function storageKey(round) {
+
+    return [
+        "rps-secret",
+        CONTRACT_ADDRESS.toLowerCase(),
+        account.toLowerCase(),
+        round.toString()
+    ].join("-");
+
+}
+
+// =====================================
+// 6. COMMIT MOVE
+// =====================================
+
+async function commitMove() {
+
+    try {
+
+        if (!selectedMove) {
+            throw new Error("Please select a move first.");
+        }
+
+        const round = await contract.round();
+
+        const key = storageKey(round);
+
+        if (localStorage.getItem(key)) {
+            throw new Error("You already have a saved move for this round.");
+        }
+
+        // Generate a secret salt
+        const salt = ethers.hexlify(
+            ethers.randomBytes(32)
+        );
+
+        // Match Solidity abi.encode(...)
+        const encoded = ethers.AbiCoder.defaultAbiCoder().encode(
+            ["address", "uint256", "address", "uint8", "string"],
+            [
+                CONTRACT_ADDRESS,
+                round,
+                account,
+                selectedMove,
+                salt
+            ]
+        );
+
+        const hash = ethers.keccak256(encoded);
+
+        $("message").innerText = "Sending commit transaction...";
+
+        const tx = await contract.commitMove(hash);
+
+        await tx.wait();
+
+        // Save move and salt for later reveal
+        localStorage.setItem(key, JSON.stringify({
+            move: selectedMove,
+            salt: salt
+        }));
+
+        $("message").innerText =
+            "Commit successful! Your move is hidden on the blockchain.";
+
+        await refreshGame();
+
+    } catch (error) {
+
+        showError(error);
+
+    }
+
+}
+
+// =====================================
+// 7. REVEAL MOVE
+// =====================================
+
+async function revealMove() {
+
+    try {
+
+        const round = await contract.round();
+
+        const key = storageKey(round);
+
+        const saved = localStorage.getItem(key);
+
+        if (!saved) {
+            throw new Error("No saved move found for this wallet and round.");
+        }
+
+        const secret = JSON.parse(saved);
+
+        $("message").innerText = "Sending reveal transaction...";
+
+        const tx = await contract.revealMove(
+            secret.move,
+            secret.salt
+        );
+
+        await tx.wait();
+
+        $("message").innerText =
+            "Your move was revealed successfully!";
+
+        await refreshGame();
+
+    } catch (error) {
+
+        showError(error);
+
+    }
+
+}
+
+// =====================================
+// 8. REFRESH GAME INFORMATION
+// =====================================
+
+async function refreshGame() {
+
+    try {
+
+        if (!contract) return;
+
+        const p1 = await contract.player1();
+        const p2 = await contract.player2();
+
+        const round = await contract.round();
+        const result = await contract.result();
+
+        $("player1").innerText = shortAddress(p1);
+        $("player2").innerText =
+            p2 === ethers.ZeroAddress
+                ? "Waiting for Player 2"
+                : shortAddress(p2);
+
+        $("roundInfo").innerText = "Round: " + round;
+
+        if (p2 === ethers.ZeroAddress) {
+            $("gameStatus").innerText =
+                "Waiting for Player 2 to join...";
+        } else {
+            $("gameStatus").innerText =
+                "Both players can commit their moves.";
+        }
+
+        if (account) {
+
+            const data = await contract.players(round, account);
+
+            $("player1Status").innerText =
+                p1.toLowerCase() === account.toLowerCase()
+                    ? playerState(data)
+                    : "Player 1";
+
+            $("player2Status").innerText =
+                p2 !== ethers.ZeroAddress &&
+                p2.toLowerCase() === account.toLowerCase()
+                    ? playerState(data)
+                    : "Player 2";
+
+        }
+
+        $("gameResult").innerText =
+            result.length > 0 ? result : "Waiting for reveals...";
+
+        updateButtons();
+
+    } catch (error) {
+
+        showError(error);
+
+    }
+
+}
+
+function playerState(data) {
+
+    if (data[2]) return "Move revealed";
+
+    if (data[0] !== ethers.ZeroHash) return "Move committed";
+
+    return "Not committed";
+
+}
+
+function shortAddress(address) {
+
+    if (address === ethers.ZeroAddress) return "Not registered";
+
+    return address.slice(0, 8) + "..." + address.slice(-6);
+
+}
+
+// =====================================
+// 9. UPDATE BUTTONS
+// =====================================
+
+async function updateButtons() {
+
+    if (!contract || !account) return;
+
+    try {
+
+        const round = await contract.round();
+
+        const p1 = await contract.player1();
+        const p2 = await contract.player2();
+
+        const result = await contract.result();
+
+        const isPlayer =
+            account.toLowerCase() === p1.toLowerCase() ||
+            account.toLowerCase() === p2.toLowerCase();
+
+        const bothJoined = p2 !== ethers.ZeroAddress;
+
+        const data = await contract.players(round, account);
+
+        const committed = data[0] !== ethers.ZeroHash;
+        const revealed = data[2];
+
+        $("commitBtn").disabled =
+            !selectedMove ||
+            !isPlayer ||
+            committed ||
+            result.length > 0;
+
+        $("revealBtn").disabled =
+            !isPlayer ||
+            !bothJoined ||
+            !committed ||
+            revealed ||
+            result.length > 0;
+
+        $("newGameBtn").disabled =
+            account.toLowerCase() !== p1.toLowerCase() ||
+            result.length === 0;
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+
+}
+
+// =====================================
+// 10. NEW GAME
+// =====================================
+
+async function newGame() {
+
+    try {
+
+        const tx = await contract.newGame();
+
+        $("message").innerText = "Starting a new game...";
+
+        await tx.wait();
+
+        selectedMove = null;
+
+        document.querySelectorAll(".move").forEach(btn => {
+            btn.classList.remove("selected");
+        });
+
+        $("message").innerText = "New round started!";
+
+        await refreshGame();
+
+    } catch (error) {
+
+        showError(error);
+
+    }
+
+}
+
+// =====================================
+// 11. ERROR HANDLING
+// =====================================
+
+function showError(error) {
+
+    console.error(error);
+
+    const message =
+        error.reason ||
+        error.shortMessage ||
+        error.message ||
+        "Unknown error";
+
+    $("message").innerText = message;
+
+}
+
+// =====================================
+// 12. BUTTON EVENTS
+// =====================================
+
+$("connectBtn").addEventListener("click", connectWallet);
+
+$("commitBtn").addEventListener("click", commitMove);
+
+$("revealBtn").addEventListener("click", revealMove);
+
+$("refreshBtn").addEventListener("click", refreshGame);
+
+$("newGameBtn").addEventListener("click", newGame);
+
+// Handle MetaMask account and network changes
+if (window.ethereum) {
+
+    window.ethereum.on("accountsChanged", () => {
+        window.location.reload();
+    });
+
+    window.ethereum.on("chainChanged", () => {
+        window.location.reload();
+    });
+
+}
+
+</script>
+
+</body>
+</html>
